@@ -1,0 +1,32 @@
+<aura:component
+    implements="flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+    access="global" controller="RecordHunterController">
+
+    <aura:attribute access="public" type="String" name="title" default="Record" />
+    <aura:attribute name="recordId" type="String" access="public" default="" />
+    <aura:attribute name="fields" type="String[]" access="public"
+        default="['Name', 'Probability', 'StageName', 'CloseDate']" />
+
+    <!-- Event Handler -->
+    <aura:handler event="c:RecordIdRelationEvent" action="{!c.onRecordHunterEvent}" />
+
+    <lightning:card>
+        <!-- Card Title -->
+        <!-- コンポーネント参照での属性の設定 https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/ref_tag_set_cmp_ref.htm?search_text=aura:set -->
+        <aura:set attribute="title">
+            <!-- aura:if 参考：https://developer.salesforce.com/docs/atlas.ja-jp.220.0.lightning.meta/lightning/perf_warnings_if.htm?search_text=aura:if -->
+            <aura:if isTrue="{!!empty(v.title)}">
+                <!-- lightning:icon コンテキストを提供し、使いやすさを向上させる視覚要素を表します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:icon/example -->
+                <lightning:icon iconName="standard:search" size="small" />　{!v.title}
+            </aura:if>
+        </aura:set>
+        <!-- /Card Title -->
+        <lightning:recordForm objectApiName="Opportunity" recordId="{!v.recordId}" fields="{!v.fields}" />
+
+        <div class="{!'keyword-button'}">
+            <lightning:button variant="brand" label="Refresh" onclick="{!c.onRefresh}" />
+            <lightning:button variant="brand" label="Detail" onclick="{!c.onDetail}" />
+        </div>
+
+    </lightning:card>
+</aura:component>

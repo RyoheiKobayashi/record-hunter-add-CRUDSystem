@@ -1,0 +1,5 @@
+<!-- aura:event 参考： https://developer.salesforce.com/docs/atlas.ja-jp.220.0.lightning.meta/lightning/ref_aura_event.htm?search_text=aura:event -->
+<!-- イベントとの通信 参考：https://developer.salesforce.com/docs/atlas.ja-jp.220.0.lightning.meta/lightning/events_intro.htm -->
+<aura:event type="APPLICATION" description="Event for Record">
+    <aura:attribute name="recordId" type="String" />
+</aura:event>

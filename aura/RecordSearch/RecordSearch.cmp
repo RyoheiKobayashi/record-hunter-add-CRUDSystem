@@ -1,0 +1,206 @@
+<!-- aura:component コンポーネントはAuraの機能単位であり、UIのモジュール式で再利用可能なセクションをカプセル化します。 参考：https://developer.salesforce.com/docs/component-library/bundle/aura:component -->
+<aura:component access="global"
+    implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+    controller="RecordHunterController">
+
+    <!-- External Libraries -->
+    <!-- ltng:require 静的リソースとしてアップロードした後、外部CSSおよびJavaScriptライブラリをロードできます。参考：https://developer.salesforce.com/docs/component-library/bundle/ltng:require -->
+    <!-- moment.js JavaScriptのDateオブジェクトをラップするオブジェクトを生成して、そのオブジェクトに日付処理を任せることが出来る。 参考：https://qiita.com/osakanafish/items/5ef636bbcb2c3ef94953 -->
+    <ltng:require scripts="{!$Resource.JavaScriptLibrary + '/asset/js/moment.js'}"
+        afterScriptsLoaded="{!c.onAfterScriptsLoaded}" />
+
+    <!-- Design Attributes -->
+    <!-- aura:attribute は、アプリケーション、インターフェース、コンポーネント、イベントで使用できる属性を記述します。 参考：https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/ref_aura_attribute.htm -->
+    <aura:attribute access="public" type="String" name="title" />
+    <aura:attribute access="public" type="String" name="objectName" />
+    <aura:attribute access="public" type="String" name="searchButtonLabel" />
+    <aura:attribute access="public" type="String" name="fieldNames" />
+    <aura:attribute access="public" type="String" name="numColums" />
+    <aura:attribute access="public" type="Boolean" name="isObjectNameDisplayed" />
+    <aura:attribute access="public" type="Boolean" name="isFieldIndexDisplayed" />
+    <aura:attribute access="public" type="Boolean" name="isConditionFolded" />
+    <aura:attribute access="public" type="String" name="customLogic" default="" />
+    <aura:attribute access="public" type="String" name="sectionHeaders" default="" />
+    <aura:attribute access="public" type="String" name="fieldNamesOrDefaultValues" default="" />
+
+    <!-- Public Attributes -->
+    <aura:attribute access="public" type="Boolean" name="isCheckboxIgnoredIfUnchecked" default="true" />
+    <aura:attribute access="public" type="String" name="keyword" default='' />
+    <aura:attribute access="public" type="String" name="recordId" />
+    <aura:attribute access="public" type="String" name="errorMessage" default="" />
+
+    <!-- Private Attributes -->
+    <aura:attribute access="private" type="Object[]" name="fields" default="[]" />
+    <aura:attribute access="private" type="Boolean" name="isKeywordEnabled" />
+    <aura:attribute access="private" type="Boolean" name="isConditionEnabled" />
+    <aura:attribute access="private" type="Integer" name="numGroupItems" default="6" />
+    <aura:attribute access="private" type="Object[]" name="groups" default="[]" />
+
+    <!-- Event Handlers -->
+    <!-- ハンドラコンポーネントのマークアップで <aura:handler> を使用します。 参考：https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/events_component_handling_intro.htm -->
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+
+    <!-- Event Register -->
+    <!-- コンポーネントは、マークアップに <aura:registerEvent> を使用して、イベントを起動できるように登録します。 参考：https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/events_component_fire.htm -->
+    <aura:registerEvent name="appEvent" type="c:RecordEvent" />
+
+    <!-- User Interface -->
+    <div aura:id="component">
+
+        <!-- lightning:card カードは、関連する情報のグループにコンテナを適用するために使用されます。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:card/example -->
+        <lightning:card>
+
+            <!-- Card Title -->
+            <!-- コンポーネント参照での属性の設定 https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/ref_tag_set_cmp_ref.htm?search_text=aura:set -->
+            <aura:set attribute="title">
+                <!-- aura:if 参考：https://developer.salesforce.com/docs/atlas.ja-jp.220.0.lightning.meta/lightning/perf_warnings_if.htm?search_text=aura:if -->
+                <aura:if isTrue="{!!empty(v.title)}">
+                    <!-- lightning:icon コンテキストを提供し、使いやすさを向上させる視覚要素を表します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:icon/example -->
+                    <lightning:icon iconName="standard:search" size="small" />　{!v.title}
+                </aura:if>
+            </aura:set>
+            <!-- /Card Title -->
+
+            <aura:if isTrue="{!!empty(v.errorMessage)}">
+                <ui:message title="Error" severity="error" closable="false">{!v.errorMessage}</ui:message>
+            </aura:if>
+
+            <!-- Keyword Input Section -->
+            <div class="flex keyword">
+                <div class="{!'keyword-filterControl' + if(empty(v.fieldNames), ' is-hidden', '')}">
+                    <!-- lightning:buttonIcon アイコンのみのHTMLボタン。 https://developer.salesforce.com/docs/component-library/bundle/lightning:buttonIcon/example -->
+                    <lightning:buttonIcon class="{!if(v.isConditionFolded, '', ' is-hidden')}"
+                        iconName="utility:jump_to_bottom" variant="border-filled"
+                        onclick="{!c.onFilterControlButtonClicked}" alternativeText="Show filtering options" />
+                    <lightning:buttonIcon class="{!if(v.isConditionFolded, ' is-hidden', '')}"
+                        iconName="utility:jump_to_top" variant="border-filled"
+                        onclick="{! c.onFilterControlButtonClicked}" alternativeText="Hide filtering options" />
+                </div>
+                <!-- lightning:input type属性に応じてユーザー入力を受け入れるインタラクティブコントロールを表します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:input/example -->
+                <lightning:input label="dummy" class="is-labelHidden" type="search" variant="label-hidden"
+                    name="keyword" value="{!v.keyword}" />
+                <div class="{!'keyword-button'}">
+                    <!-- lightning:button ボタン要素を表します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:button/example -->
+                    <lightning:button variant="brand" label="{!v.searchButtonLabel}" onclick="{!c.onSearch}" />
+                </div>
+            </div>
+            <!-- /Keyword Input Section -->
+
+            <!-- Condition Input Section -->
+            <div
+                class="{!'condition' + if(or(empty(v.fieldNames), and(!empty(v.fieldNames), v.isConditionFolded)), ' is-hidden', '')}">
+                <!-- lightning:layout ページ上にコンテナーを配置するためのレスポンシブグリッドシステムを表します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:layout/example -->
+                <lightning:layout multipleRows="true">
+                    <!-- Group -->
+                    <!-- aura:iteration アイテムのコレクションのビューをレンダリングします。クライアント側で排他的に作成できるコンポーネントを含む反復をサポートします。 参考：https://developer.salesforce.com/docs/component-library/bundle/aura:iteration/example -->
+                    <aura:iteration items="{!v.groups}" var="group" indexVar="groupIndex">
+                        <!-- Section Header -->
+                        <aura:if isTrue="{!!empty(group.header)}">
+                            <!-- lightning:layoutItem lightning：layoutの基本要素。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:layoutItem/example -->
+                            <lightning:layoutItem size="12" padding="around-small">
+                                <div class="slds-text-heading_small slds-m-top_small">{!group.header.label}</div>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <!-- /Section Header -->
+
+                        <!-- Fields -->
+                        <aura:iteration items="{!group.fields}" var="field" indexVar="fieldIndex">
+                            <aura:if isTrue="{!!empty(field)}">
+                                <lightning:layoutItem size="{!div(12, v.numColums)}" padding="horizontal-small"
+                                    class="slds-m-bottom_small">
+                                    <aura:if
+                                        isTrue="{!field.type=='STRING' || field.type=='EMAIL' || field.type=='URL' || field.type=='PHONE' || field.type=='ID' || field.type=='TEXTAREA'}">
+                                        <lightning:input type="text"
+                                            label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                            name="{!field.name}" value="{!field.value}" />
+                                    </aura:if>
+                                    <aura:if
+                                        isTrue="{!field.type=='INTEGER' || field.type=='PERCENT' || field.type=='CURRENCY' || field.type=='DOUBLE'}">
+                                        <div class="flex">
+                                            <lightning:input type="number"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.minValue}" step="any"
+                                                placeholder="min" />
+                                            <div class="spacer" />
+                                            <lightning:input type="number"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.maxValue}" step="any"
+                                                placeholder="max" variant="label-hidden" />
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='PICKLIST'}">
+                                        <lightning:select name="{!field.name}"
+                                            label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                            value="{!field.value}">
+                                            <option value="">-</option>
+                                            <aura:iteration items="{!field.options}" var="option">
+                                                <option value="{!option.value}" selected="{!option.isSelected}"
+                                                    text="{!option.label}" />
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='MULTIPICKLIST'}">
+                                        <c:MultiSelect id="{!field.path}" name="{!field.name}"
+                                            label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                            options="{!field.options}" values="{!field.value}" placeholder="" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='BOOLEAN'}">
+                                        <lightning:input type="checkbox"
+                                            label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                            name="{!field.name}" checked="{!field.value}" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='DATE'}">
+                                        <div class="flex">
+                                            <lightning:input type="date"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.minValue}" />
+                                            <div class="spacer" />
+                                            <lightning:input type="date"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.maxValue}" variant="label-hidden" />
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='DATETIME'}">
+                                        <div class="flex">
+                                            <lightning:input type="datetime-local"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.minValue}" />
+                                            <div class="spacer" />
+                                            <lightning:input type="datetime-local"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.maxValue}" variant="label-hidden" />
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!field.type=='TIME'}">
+                                        <div class="flex">
+                                            <lightning:input type="time"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.minValue}" />
+                                            <div class="spacer" />
+                                            <lightning:input type="time"
+                                                label="{!if(v.isFieldIndexDisplayed, field.index + '.', '') + field.label + if(v.isObjectNameDisplayed, ' - ' + field.objectLabel, '')}"
+                                                name="{!field.name}" value="{!field.maxValue}" variant="label-hidden" />
+                                        </div>
+                                    </aura:if>
+                                </lightning:layoutItem>
+                            </aura:if>
+                        </aura:iteration>
+                        <!-- /Fields -->
+
+                    </aura:iteration>
+                    <!-- /Group -->
+
+                </lightning:layout>
+            </div>
+
+            <!-- Default Search Result Output -->
+            {!v.body}
+            <!-- /Default Search Result Output -->
+
+        </lightning:card>
+        <!-- Condition Input Section -->
+
+        <!-- lightning:spinner アニメーション化されたスピナーを表示します。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:spinner/example -->
+        <lightning:spinner aura:id="spinner" class="slds-hide" variant="brand" size="large" />
+    </div>
+</aura:component>

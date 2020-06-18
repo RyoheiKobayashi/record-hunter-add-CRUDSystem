@@ -1,0 +1,108 @@
+<aura:component
+    implements="flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+    access="global" controller="RecordHunterController">
+
+    <!-- Design Attributes -->
+    <aura:attribute name="title" type="String" access="public" />
+    <aura:attribute name="objectName" type="String" access="public" />
+    <aura:attribute name="fieldNames" type="String" access="public" />
+    <aura:attribute name="height" type="Integer" access="public" default="500" />
+    <aura:attribute name="pageSize" type="Integer" access="public" default="50" />
+    <aura:attribute name="true" type="String" access="public" default="true" />
+    <aura:attribute name="false" type="String" access="public" default="false" />
+    <aura:attribute name="flowNames" type="String" access="public" default="" />
+    <aura:attribute name="flowLabels" type="String" access="public" default="" />
+    <aura:attribute name="messageWhenNoResult" type="String" access="public" />
+
+    <!-- Public Attributes -->
+    <aura:attribute name="recordId" type="String" access="public" default="" />
+    <aura:attribute name="recordIds" type="String[]" access="public" default="[]" />
+    <aura:attribute name="modalBody" type="Aura.Component[]" access="public" />
+    <aura:attribute name="errorMessage" type="String" access="public" default="" />
+
+    <!-- Private Attributes -->
+    <aura:attribute name="fields" type="Object[]" access="public" default="[]" />
+    <aura:attribute name="columns" type="Object[]" access="private" default="[]" />
+    <aura:attribute name="data" type="Object[]" access="private" default="[]" />
+    <aura:attribute name="sortedDirection" type="String" access="private" />
+    <aura:attribute name="sortedBy" type="String" access="private" />
+    <aura:attribute name="flows" type="Object[]" access="private" default="[]" />
+    <aura:attribute name="offset" type="Integer" access="private" default="0" />
+
+    <!-- Event Handler -->
+    <aura:registerEvent name="appEvent" type="c:RecordIdRelationEvent" />
+    <aura:handler event="c:RecordEvent" action="{!c.onRecordHunterEvent}" />
+    <aura:handler name="init" value="{!this}" action="{!c.valueInit}" />
+
+    <!-- User Interface -->
+    <div aura:id="component">
+        <lightning:card>
+            <!-- Card Header -->
+            <aura:set attribute="title">
+                <aura:if isTrue="{!!empty(v.title)}">
+                    <lightning:icon iconName="custom:custom4" size="small" />
+                    {!v.title}({!v.recordIds.length})
+                </aura:if>
+            </aura:set>
+            <!-- /Card Header -->
+
+            <!-- Card Actions -->
+            <aura:set attribute="actions">
+                <aura:if isTrue="{!!empty(v.flows)}">
+                    <lightning:buttonMenu iconName="utility:flow" alternativeText="Flow" onselect="{!c.onFlowSelected}"
+                        menuAlignment="right">
+                        <aura:iteration items="{!v.flows}" var="flow">
+                            <lightning:menuItem label="{!flow.label}" value="{!flow.name}" />
+                        </aura:iteration>
+                    </lightning:buttonMenu>
+                </aura:if>
+            </aura:set>
+            <!-- /Card Actions -->
+
+            <aura:if isTrue="{!!empty(v.errorMessage)}">
+                <ui:message title="Error" severity="error" closable="false">{!v.errorMessage}</ui:message>
+            </aura:if>
+
+            <!-- Data Table -->
+            <div style="{!'height:' + v.height + 'px;'}">
+                <!-- lightning:datatable タイプに応じてフォーマットされたデータの列を表示するテーブル。 参考：https://developer.salesforce.com/docs/component-library/bundle/lightning:datatable/example#lightningcomponentdemo:exampleDatatableWithoutCheckboxes -->
+                <lightning:datatable aura:id="dataTable" data="{!v.data}" columns="{!v.columns}"
+                    keyField="{!v.objectName + '.Id'}" hideCheckboxColumn="{!empty(v.flows)}" sortedBy="{!v.sortedBy}"
+                    sortedDirection="{!v.sortedDirection}" onsort="{!c.onSort}" onrowaction="{!c.onRowAction}"
+                    enableInfiniteLoading="true" onloadmore="{!c.onLoadMoreData}" showRowNumberColumn="true" />
+                <!-- onsort 列がソートされたときにトリガーされるアクション。 fieldNameとsortDirectionを返します。 -->
+                <!-- onrowaction 行アクションがクリックされたときにトリガーされるアクション。 デフォルトでは、行アクションメニューも閉じます。 eventDetailsオブジェクトを返します。 -->
+                <!-- enableInfiniteLoading 無限ロードを有効または無効にします。 デフォルトはfalseです。 -->
+                <!-- onloadmore 無限の読み込みにより多くのデータが読み込まれたときにトリガーされるアクション。 -->
+                <!-- onRowAction 行アクションがクリックされたときにトリガーされるアクション。 デフォルトでは、行アクションメニューも閉じます。 eventDetailsオブジェクトを返します。 -->
+            </div>
+            <!-- /Data Table  -->
+
+            <!-- Empty Message -->
+            <aura:if isTrue="{!and(empty(v.recordIds), !empty(v.messageWhenNoResult))}">
+                <div class="message">
+                    <lightning:icon iconName="utility:warning" size="large" alternativeText="No Record Found" />
+                    <div class="slds-text-body_regular message-body">
+                        {!v.messageWhenNoResult}
+                    </div>
+                </div>
+            </aura:if>
+            <!-- /Empty Message -->
+        </lightning:card>
+
+        <!-- Modal Section -->
+        <div class="{!if(empty(v.modalBody), 'is-hidden', '')}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-modal__header_empty">
+                        <lightning:buttonIcon iconName="utility:close" alternativeText="Close" size="large"
+                            variant="bare-inverse" class="slds-modal__close" onclick="{!c.onFlowClosed}" />
+                    </header>
+                    {!v.modalBody}
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+        <!-- /Modal Section -->
+    </div>
+</aura:component>

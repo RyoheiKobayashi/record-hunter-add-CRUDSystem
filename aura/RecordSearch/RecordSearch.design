@@ -1,0 +1,26 @@
+<!-- Aura コンポーネントバンドルのデザインリソース 参考：https://developer.salesforce.com/docs/atlas.ja-jp.lightning.meta/lightning/components_config_for_app_builder_design_files.htm?search_text=design:component -->
+<design:component label="RecordSearch">
+    <design:attribute name="title" label="タイトル" required="false" default="Search"
+        description="コンポーネントのヘッダーに表示されるタイトル。 表示されるいくつかのレコードが続きます。" />
+    <design:attribute name="objectName" label="対象オブジェクト" required="true" default="Opportunity"
+        description="ターゲットオブジェクトのAPI名。 カスタムオブジェクトに「__c」を追加します。 つまり、取引先、商談、CustomObject__cなど" />
+    <design:attribute name="fieldNames" label="列フィールド" required="false"
+        default="Name, StageName, Amount, CloseDate, AccountId.Name, OwnerId:User.Name"
+        description="ターゲットオブジェクトのフィールドのAPI名。 複数のフィールドには「,」を使用します。 カスタムフィールドに「__c」を追加します。 使用する '.' 親オブジェクトのフィールドにアクセスします。 ポリモーフィックフィールドの場合は「:」を使用します。 つまり、Name、Amount、CloseDate、AccountId.Name、OwnerId:User.Name" />
+    <design:attribute name="searchButtonLabel" label="検索ボタンのラベル" required="true" default="Search!"
+        description="検索ボタンのラベル" />
+    <design:attribute name="numColums" label="列の数" required="false" default="2" datasource="1, 2, 3, 4, 6"
+        description="検索ボックスレイアウトの列数。" />
+    <design:attribute name="isObjectNameDisplayed" label="オブジェクト名を表示" required="false" default="false"
+        description="オブジェクトラベルをフィールドラベルと共に表示します。" />
+    <design:attribute name="isFieldIndexDisplayed" label="フィールドインデックスを表示" required="false" default="false"
+        description="フィールドインデックスを表示します。 カスタムロジックを構成するときに役立ちます。" />
+    <design:attribute name="isConditionFolded" label="デフォルトの折りたたみ条件" required="false" default="false"
+        description="デフォルトで条件フィールドを折りたたみます。" />
+    <design:attribute name="sectionHeaders" label="セクションヘッダー" required="false" default=""
+        description="フィールドグループのヘッダーラベル。 複数のラベルには「,」を使用します。 グループのサイズは6で固定です。 フィールドに空の名前を追加するか、セクションヘッダーに空のラベルを追加して、ラベルの位置を調整します。" />
+    <design:attribute name="fieldNamesOrDefaultValues" label="デフォルト値またはフィールド名" required="false" default=""
+        description="フィールドのデフォルト値。 複数の値には「,」を使用します。 最初の値はキーワード用に予約されています。 フィールド。コンポーネントがレコード詳細ページに配置され、値がレコードの有効なフィールド名である場合、レコードの値が設定されます。" />
+    <design:attribute name="customLogic" label="カスタムロジック" required="false" default=""
+        description="フィールドインデックスと論理演算子を使用してクエリロジックを構成します。 インデックス「0」はキーワードフィールド用に予約されています。 インデックスが省略されたフィールドは無視されます。 つまり、0 AND（1 OR 2）" />
+</design:component>
